@@ -1,19 +1,11 @@
+import math
 import random
 
 import networkx as nx
 import matplotlib.pyplot as plt
 import pandas as pd
 
-
-COLUMN_NAMES = ['label',
-                'n1_outlinks',
-                'n1_inlinks',
-                'n2_outlinks',
-                'n2_inlinks',
-                'common_neighbors',
-                'n1_bw_centrality',
-                'n2_bw_centrality',
-                'longest_path']
+import src.config.config as conf
 
 
 def generate_train_graph_and_test_edges(file_name: str):
@@ -103,6 +95,10 @@ def extract_features_from_graph(kinship_graph: nx.DiGraph):
     # Betweenness centrality values of nodes in undirected_kinship_graph
     bw_centrality = nx.betweenness_centrality(undirected_kinship_graph, normalized=False)
 
+    # Katz centrality values of nodes
+    phi = max(nx.adjacency_spectrum(kinship_graph)).real  # largest eigenvalue of adj matrix
+    katz_centrality = nx.katz_centrality(kinship_graph, 1 / phi - 0.01)
+
     # Dictionary to create dataframe from, keys are edge indices
     # For each key, value is a list representing features of that edge
     # Features are the following:
@@ -121,12 +117,15 @@ def extract_features_from_graph(kinship_graph: nx.DiGraph):
         feature_dict[(u, v)] = generate_features_for_nodes(kinship_graph,
                                                            undirected_kinship_graph,
                                                            bw_centrality,
+                                                                                         katz_centrality,
                                                            u,
                                                            v,
                                                            a['label'],
                                                            is_test_edges=False)
 
-    return pd.DataFrame.from_dict(feature_dict, orient='index', columns=COLUMN_NAMES)
+    feature_names = conf.ORIGINAL_FEATURES + conf.ADDED_FEATURES
+
+    return pd.DataFrame.from_dict(feature_dict, orient='index', columns=feature_names)
 
 
 def extract_features_for_test_edges(train_kinship_graph: nx.DiGraph, test_edges: list):
@@ -136,6 +135,10 @@ def extract_features_for_test_edges(train_kinship_graph: nx.DiGraph, test_edges:
 
     # Betweenness centrality values of nodes in undirected_kinship_graph
     bw_centrality = nx.betweenness_centrality(undirected_kinship_graph, normalized=False)
+
+    # Katz centrality values of nodes
+    phi = max(nx.adjacency_spectrum(train_kinship_graph)).real  # largest eigenvalue of adj matrix
+    katz_centrality = nx.katz_centrality(train_kinship_graph, 1 / phi - 0.01)
 
     # Dictionary to create dataframe from, keys are edge indices
     # For each key, value is a list representing features of that edge
@@ -156,23 +159,27 @@ def extract_features_for_test_edges(train_kinship_graph: nx.DiGraph, test_edges:
         feature_dict[(current_tuple[0], current_tuple[1])] = generate_features_for_nodes(train_kinship_graph,
                                                                                          undirected_kinship_graph,
                                                                                          bw_centrality,
+                                                                                         katz_centrality,
                                                                                          current_tuple[0],
                                                                                          current_tuple[1],
                                                                                          current_tuple[2],
                                                                                          is_test_edges=True)
 
-    return pd.DataFrame.from_dict(feature_dict, orient='index', columns=COLUMN_NAMES)
+    feature_names = conf.ORIGINAL_FEATURES + conf.ADDED_FEATURES
+
+    return pd.DataFrame.from_dict(feature_dict, orient='index', columns=feature_names)
 
 
 # is_test_edges boolean is used to control if provided nodes have label in training dataset, if so number of other
 # outlinks of n1 and number of other inlinks of n2 should be subtracted 1 to not count edge itself.
-def generate_features_for_nodes(kinship_graph, undirected_kinship_graph, bw_centrality,
+def generate_features_for_nodes(kinship_graph, undirected_kinship_graph, bw_centrality, katz_centrality,
                                 u, v, relationship, is_test_edges: bool):
     feature_list = list()
 
     # Store label of the edge
     feature_list.append(relationship)
 
+    # ------------------- Original Features -------------------
     # Store number of other outlinks of n1 (other than the given relationship)
     n1_out_degree = kinship_graph.out_degree(u)
     if not is_test_edges:
@@ -205,5 +212,15 @@ def generate_features_for_nodes(kinship_graph, undirected_kinship_graph, bw_cent
 
     # Store length of the longest path between n1 and n2
     feature_list.append(len(max(nx.all_simple_paths(kinship_graph, u, v), key=lambda x: len(x))))
+
+    # ------------------- Added Features -------------------
+    # Store Adamic Adar index of the edge
+    feature_list.append(nx.adamic_adar_index(undirected_kinship_graph, [(u, v)]).__next__()[2])
+
+    # Store Katz centrality value of n1
+    feature_list.append(katz_centrality[u])
+
+    # Store Katz centrality value of n2
+    feature_list.append(katz_centrality[v])
 
     return feature_list

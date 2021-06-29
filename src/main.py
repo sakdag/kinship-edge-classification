@@ -32,8 +32,11 @@ if __name__ == '__main__':
         df_test.to_csv(test_kinship_features_file_name, index=False)
 
     elif mode == 'classify':
-        train_df = pd.read_csv(train_kinship_features_file_name)
-        test_df = pd.read_csv(test_kinship_features_file_name)
+        train_df_v2 = pd.read_csv(train_kinship_features_file_name)
+        test_df_v2 = pd.read_csv(test_kinship_features_file_name)
+
+        train_df_v1 = train_df_v2.copy().drop(columns=conf.ADDED_FEATURES)
+        test_df_v1 = test_df_v2.copy().drop(columns=conf.ADDED_FEATURES)
 
         classifiers_to_use = dict()
         classifiers_to_use['K Nearest Neighbor'] = KNeighborsClassifier(n_neighbors=4)
@@ -41,4 +44,10 @@ if __name__ == '__main__':
         classifiers_to_use['Random Forest'] = RandomForestClassifier(max_depth=2, random_state=0)
         classifiers_to_use['Decision Tree'] = DecisionTreeClassifier(random_state=0)
 
-        classification.run_classifiers(train_df, test_df, classifiers_to_use, label_column_name='label')
+        # Run classifiers on first version of the dataset
+        print('Running classifiers on first version of the dataset:')
+        classification.run_classifiers(train_df_v1, test_df_v1, classifiers_to_use, label_column_name='label')
+
+        # Run classifiers on second version of the dataset with added features
+        print('Running classifiers on second version of the dataset:')
+        classification.run_classifiers(train_df_v2, test_df_v2, classifiers_to_use, label_column_name='label')
