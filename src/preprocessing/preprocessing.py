@@ -103,6 +103,7 @@ def extract_features_from_graph(kinship_graph: nx.DiGraph):
     # For each key, value is a list representing features of that edge
     # Features are the following:
     # 0: label of the edge
+    # Given features
     # 1: number of other outlinks of n1 (other than the given relationship)
     # 2: number of inlinks of n1
     # 3: number of outlinks of n2
@@ -111,13 +112,17 @@ def extract_features_from_graph(kinship_graph: nx.DiGraph):
     # 6: betweenness centrality value of n1
     # 7: betweenness centrality value of n2
     # 8: length of the longest path between n1 and n2
+    # Added features
+    # 9: Adamic Adar index of the edge
+    # 10: Katz centrality value of n1
+    # 11: Katz centrality value of n2
     feature_dict = dict()
 
     for u, v, a in kinship_graph.edges(data=True):
         feature_dict[(u, v)] = generate_features_for_nodes(kinship_graph,
                                                            undirected_kinship_graph,
                                                            bw_centrality,
-                                                                                         katz_centrality,
+                                                           katz_centrality,
                                                            u,
                                                            v,
                                                            a['label'],
@@ -144,6 +149,7 @@ def extract_features_for_test_edges(train_kinship_graph: nx.DiGraph, test_edges:
     # For each key, value is a list representing features of that edge
     # Features are the following:
     # 0: label of the edge
+    # Given features
     # 1: number of other outlinks of n1 (other than the given relationship)
     # 2: number of inlinks of n1
     # 3: number of outlinks of n2
@@ -152,6 +158,10 @@ def extract_features_for_test_edges(train_kinship_graph: nx.DiGraph, test_edges:
     # 6: betweenness centrality value of n1
     # 7: betweenness centrality value of n2
     # 8: length of the longest path between n1 and n2
+    # Added features
+    # 9: Adamic Adar index of the edge
+    # 10: Katz centrality value of n1
+    # 11: Katz centrality value of n2
     feature_dict = dict()
 
     # current_tuple structure (u, v, label)

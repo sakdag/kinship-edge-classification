@@ -39,7 +39,7 @@ if __name__ == '__main__':
         test_df_v1 = test_df_v2.copy().drop(columns=conf.ADDED_FEATURES)
 
         classifiers_to_use = dict()
-        classifiers_to_use['K Nearest Neighbor'] = KNeighborsClassifier(n_neighbors=4)
+        classifiers_to_use['K Nearest Neighbors'] = KNeighborsClassifier(n_neighbors=4)
         classifiers_to_use['Naive Bayes'] = GaussianNB()
         classifiers_to_use['Random Forest'] = RandomForestClassifier(max_depth=2, random_state=0)
         classifiers_to_use['Decision Tree'] = DecisionTreeClassifier(random_state=0)
