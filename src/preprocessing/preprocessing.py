@@ -1,4 +1,5 @@
-import math
+import argparse
+import os
 import random
 
 import networkx as nx
@@ -234,3 +235,40 @@ def generate_features_for_nodes(kinship_graph, undirected_kinship_graph, bw_cent
     feature_list.append(katz_centrality[v])
 
     return feature_list
+
+
+def main():
+    dirname = os.path.dirname(__file__)
+    kinship_data_file_name = os.path.join(dirname, conf.KINSHIP_GRAPH_FILE_PATH)
+
+    train_kinship_features_file_name = os.path.join(dirname, conf.TRAIN_KINSHIP_FEATURES_FILE_PATH)
+    test_kinship_features_file_name = os.path.join(dirname, conf.TEST_KINSHIP_FEATURES_FILE_PATH)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset_path',
+                        default=kinship_data_file_name,
+                        help='absolute path of the dataset you want to use, default: '
+                             '{path to project}/data/raw/kinship.data')
+    parser.add_argument('--train_dataset_output_path',
+                        default=train_kinship_features_file_name,
+                        help='absolute path of the train kinship features dataset you want to use, default: '
+                             '{path to project}/data/processed/train_kinship_features.csv')
+    parser.add_argument('--test_dataset_output_path',
+                        default=test_kinship_features_file_name,
+                        help='absolute path of the test kinship features dataset you want to use, default: '
+                             '{path to project}/data/processed/test_kinship_features.csv')
+    parser_args = parser.parse_args()
+
+    # Generate graph from train edges (80%) and get test edges as
+    # tuple of (first node, second node, relationship) (20%)
+    kinship_graph_train, test_edges = generate_train_graph_and_test_edges(kinship_data_file_name)
+
+    df_train = extract_features_from_graph(kinship_graph_train)
+    df_test = extract_features_for_test_edges(kinship_graph_train, test_edges)
+
+    df_train.to_csv(parser_args.train_dataset_output_path, index=False)
+    df_test.to_csv(parser_args.test_dataset_output_path, index=False)
+
+
+if __name__ == '__main__':
+    main()
